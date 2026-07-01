@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Request
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -15,8 +16,9 @@ from app.modules.auth.schemas.auth_schema import (
     ResetPasswordRequest,
     TokenResponse,
     UserResponse,
-    VerifyEmailRequest,
 )
+
+security_scheme = HTTPBearer()
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
@@ -50,10 +52,12 @@ async def refresh_token(
 
 @router.post("/logout", status_code=204)
 async def logout(
+    credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
     current_user: User = Depends(get_current_user),
     auth_service: AuthService = Depends(get_auth_service),
 ):
-    await auth_service.logout(str(current_user.id), "")
+    token_hash = credentials.credentials[-50:]
+    await auth_service.logout(str(current_user.id), token_hash)
     return None
 
 

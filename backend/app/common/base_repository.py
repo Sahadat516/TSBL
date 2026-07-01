@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Generic, TypeVar
 
 from sqlalchemy import select, update as sa_update, delete as sa_delete
@@ -47,7 +48,7 @@ class BaseRepository(Generic[T]):
         stmt = (
             sa_update(self.model_class)
             .where(self.model_class.id == entity_id)
-            .values(deleted_at=__import__("datetime").datetime.now())
+            .values(deleted_at=datetime.now(timezone.utc))
         )
         await self.db.execute(stmt)
         await self.db.flush()
