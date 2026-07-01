@@ -1,0 +1,26 @@
+* text=auto eol=lf
+
+*.md text diff=markdown
+*.py text diff=python
+*.ts text diff=typescript
+*.tsx text diff=typescript
+*.json text
+*.yaml text
+*.yml text
+*.toml text
+*.cfg text
+*.ini text
+*.sh text eol=lf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.tar binary
+*.gz binary
