@@ -111,7 +111,7 @@ class AuthService:
         if not payload or payload.get("type") != "refresh":
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
 
-        user_id = payload.get("sub")
+        user_id = uuid.UUID(payload.get("sub"))
         user = await self.user_repo.get(user_id)
         if not user:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
@@ -124,7 +124,8 @@ class AuthService:
             await self.session_repo.soft_delete(session.id)
 
     async def change_password(self, user_id: str, current_password: str, new_password: str):
-        user = await self.user_repo.get(user_id)
+        user_uuid = uuid.UUID(user_id)
+        user = await self.user_repo.get(user_uuid)
         if not user:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
@@ -134,7 +135,7 @@ class AuthService:
         user.password_hash = hash_password(new_password)
         await self.db.flush()
 
-        await self.session_repo.revoke_user_sessions(user_id)
+        await self.session_repo.revoke_user_sessions(user_uuid)
 
     async def forgot_password(self, email: str):
         user = await self.user_repo.find_by_email(email)
@@ -156,7 +157,7 @@ class AuthService:
         if not payload or payload.get("purpose") != "password_reset":
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid reset token")
 
-        user_id = payload.get("sub")
+        user_id = uuid.UUID(payload.get("sub"))
         user = await self.user_repo.get(user_id)
         if not user:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
