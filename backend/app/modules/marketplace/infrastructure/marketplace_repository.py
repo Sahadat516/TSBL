@@ -3,7 +3,8 @@ from __future__ import annotations
 import uuid
 from decimal import Decimal
 
-from sqlalchemy import or_, select
+from sqlalchemy import cast, or_, select
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
@@ -130,7 +131,7 @@ class ProductRepository(BaseRepository[Product]):
                 Product.title.ilike(pattern),
                 Product.description.ilike(pattern),
                 Product.short_description.ilike(pattern),
-                Product.tags["name"].as_string().ilike(pattern),
+                Product.tags["items"].as_string().ilike(pattern),
             )
             base_query = base_query.where(filter_clause)
             count_query = count_query.where(filter_clause)
@@ -164,8 +165,9 @@ class ProductRepository(BaseRepository[Product]):
             count_query = count_query.where(Product.is_featured == is_featured)
 
         if tags:
-            base_query = base_query.where(Product.tags.has_any(tags))
-            count_query = count_query.where(Product.tags.has_any(tags))
+            tag_json = cast({"items": tags}, JSONB)
+            base_query = base_query.where(Product.tags.op("@>")(tag_json))
+            count_query = count_query.where(Product.tags.op("@>")(tag_json))
 
         total_result = await self.db.execute(count_query)
         total = len(total_result.scalars().all())

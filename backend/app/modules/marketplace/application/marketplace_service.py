@@ -2,23 +2,12 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
-from decimal import Decimal
-from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import AuditLogger
-from app.modules.marketplace.domain.entities import (
-    Category,
-    CategoryStatus,
-    Product,
-    ProductMedia,
-    ProductReview,
-    ProductStatus,
-    ProductType,
-    ProductVariant,
-)
+from app.modules.marketplace.domain.entities import Product, ProductStatus, ProductType
 from app.modules.marketplace.infrastructure.marketplace_repository import (
     CategoryRepository,
     ProductRepository,
@@ -312,5 +301,5 @@ class MarketplaceService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Product not found"
             )
-        result = await self.product_repo.find_by_slug(product.slug)
-        return ProductResponse.model_validate(result or product)
+        loaded = await self.product_repo.find_by_slug(product.slug)
+        return ProductResponse.model_validate(loaded or product)
