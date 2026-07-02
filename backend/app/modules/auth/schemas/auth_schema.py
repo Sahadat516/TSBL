@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, Field
@@ -19,6 +21,8 @@ class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+    token_hash: str | None = None
+    session_id: str | None = None
 
 
 class RefreshTokenRequest(BaseModel):
@@ -33,6 +37,9 @@ class UserResponse(BaseModel):
     status: str
     is_verified: bool
     profile_photo_url: str | None
+    phone: str | None = None
+    locale: str = "en"
+    timezone: str = "UTC"
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -56,21 +63,3 @@ class ResetPasswordRequest(BaseModel):
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str = Field(..., min_length=8, max_length=128)
-
-
-class VerifyEmailRequest(BaseModel):
-    token: str
-
-
-class MFAEnableRequest(BaseModel):
-    mfa_type: str = "totp"
-
-
-class MFAVerifyRequest(BaseModel):
-    code: str
-
-
-class MFAVerifyResponse(BaseModel):
-    secret: str | None
-    qr_code_url: str | None
-    is_enabled: bool
