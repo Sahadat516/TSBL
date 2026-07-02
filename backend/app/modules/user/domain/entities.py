@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import Boolean, DateTime, Enum, Float, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import Boolean, CheckConstraint, DateTime, Float, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -16,7 +16,7 @@ class UserProfile(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True
     )
     display_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     biography: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -33,52 +33,60 @@ class UserProfile(Base):
     social_links: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
+    deleted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    updated_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
     user = relationship("User", back_populates="profile")
 
 
-class Address(Base):
-    __tablename__ = "addresses"
+class BuyerProfile(Base):
+    __tablename__ = "buyer_profiles"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True
     )
-    label: Mapped[str] = mapped_column(String(50), default="Home")
-    recipient_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    phone: Mapped[str] = mapped_column(String(20), nullable=False)
-    street_address: Mapped[str] = mapped_column(String(255), nullable=False)
-    street_address_line2: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    city: Mapped[str] = mapped_column(String(100), nullable=False)
-    state: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    postal_code: Mapped[str] = mapped_column(String(20), nullable=False)
-    country: Mapped[str] = mapped_column(String(100), nullable=False)
-    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
-    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
-    is_default: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    is_billing: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    is_shipping: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    address_type: Mapped[str] = mapped_column(String(20), default="shipping")
-    metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    preferred_categories: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    price_range_min: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    price_range_max: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    purchase_frequency: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    interests: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    total_purchases: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    total_spent: Mapped[Decimal] = mapped_column(Numeric(18, 2), default=Decimal("0.00"), nullable=False)
+    last_purchase_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
     deleted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    updated_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
-    user = relationship("User")
+    user = relationship("User", back_populates="buyer_profile")
+
+    __table_args__ = (
+        CheckConstraint("price_range_min >= 0", name="ck_buyer_price_min"),
+        CheckConstraint("price_range_max >= 0", name="ck_buyer_price_max"),
+        CheckConstraint("total_purchases >= 0", name="ck_buyer_total_purchases"),
+        CheckConstraint("total_spent >= 0", name="ck_buyer_total_spent"),
+    )
 
 
 class SellerProfile(Base):
@@ -86,20 +94,20 @@ class SellerProfile(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True
     )
     store_name: Mapped[str] = mapped_column(String(200), nullable=False)
     store_slug: Mapped[str] = mapped_column(String(200), unique=True, nullable=False, index=True)
     store_logo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     store_banner_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     store_description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    store_status: Mapped[str] = mapped_column(String(20), default="active")
+    store_status: Mapped[str] = mapped_column(String(20), default="active", nullable=False)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    verified_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
-    rating: Mapped[float] = mapped_column(Float, default=0.0)
-    total_sales: Mapped[int] = mapped_column(Integer, default=0)
-    total_products: Mapped[int] = mapped_column(Integer, default=0)
-    total_reviews: Mapped[int] = mapped_column(Integer, default=0)
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    rating: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    total_sales: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    total_products: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    total_reviews: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     response_time_hours: Mapped[float | None] = mapped_column(Float, nullable=True)
     business_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
     business_registration_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
@@ -107,19 +115,64 @@ class SellerProfile(Base):
     tax_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     social_links: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     policies: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
-    metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
     deleted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    updated_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
     user = relationship("User", back_populates="seller_profile")
+
+    __table_args__ = (
+        CheckConstraint("rating >= 0 AND rating <= 5", name="ck_seller_rating"),
+        CheckConstraint("total_sales >= 0", name="ck_seller_total_sales"),
+        CheckConstraint("total_products >= 0", name="ck_seller_total_products"),
+        CheckConstraint("total_reviews >= 0", name="ck_seller_total_reviews"),
+        CheckConstraint("response_time_hours >= 0", name="ck_seller_response_time"),
+    )
+
+
+class UserSettings(Base):
+    __tablename__ = "user_settings"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True
+    )
+    login_notifications: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    purchase_notifications: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    marketing_opt_in: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    two_factor_required: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    session_timeout_minutes: Mapped[int] = mapped_column(Integer, default=30, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+    deleted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    updated_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+    user = relationship("User", back_populates="settings")
+
+    __table_args__ = (
+        CheckConstraint("session_timeout_minutes >= 1 AND session_timeout_minutes <= 1440", name="ck_settings_session_timeout"),
+    )
 
 
 class UserPreference(Base):
@@ -127,138 +180,35 @@ class UserPreference(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True
     )
-    theme: Mapped[str] = mapped_column(String(20), default="light")
-    language: Mapped[str] = mapped_column(String(10), default="en")
-    timezone: Mapped[str] = mapped_column(String(50), default="UTC")
-    currency: Mapped[str] = mapped_column(String(3), default="USD")
-    date_format: Mapped[str] = mapped_column(String(20), default="YYYY-MM-DD")
-    time_format: Mapped[str] = mapped_column(String(10), default="24h")
-    items_per_page: Mapped[int] = mapped_column(Integer, default=20)
-    enable_push_notifications: Mapped[bool] = mapped_column(Boolean, default=True)
-    enable_email_notifications: Mapped[bool] = mapped_column(Boolean, default=True)
-    enable_sms_notifications: Mapped[bool] = mapped_column(Boolean, default=False)
-    enable_marketing_emails: Mapped[bool] = mapped_column(Boolean, default=False)
-    enable_order_updates: Mapped[bool] = mapped_column(Boolean, default=True)
-    enable_wallet_alerts: Mapped[bool] = mapped_column(Boolean, default=True)
-    enable_security_alerts: Mapped[bool] = mapped_column(Boolean, default=True)
-    enable_newsletter: Mapped[bool] = mapped_column(Boolean, default=False)
-    profile_visibility: Mapped[str] = mapped_column(String(20), default="public")
-    activity_visibility: Mapped[str] = mapped_column(String(20), default="public")
-    show_online_status: Mapped[bool] = mapped_column(Boolean, default=True)
-    allow_messages_from: Mapped[str] = mapped_column(String(20), default="everyone")
-    metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    theme: Mapped[str] = mapped_column(String(20), default="light", nullable=False)
+    language: Mapped[str] = mapped_column(String(10), default="en", nullable=False)
+    timezone: Mapped[str] = mapped_column(String(50), default="UTC", nullable=False)
+    currency: Mapped[str] = mapped_column(String(3), default="USD", nullable=False)
+    date_format: Mapped[str] = mapped_column(String(20), default="YYYY-MM-DD", nullable=False)
+    time_format: Mapped[str] = mapped_column(String(10), default="24h", nullable=False)
+    items_per_page: Mapped[int] = mapped_column(Integer, default=20, nullable=False)
+    profile_visibility: Mapped[str] = mapped_column(String(20), default="public", nullable=False)
+    activity_visibility: Mapped[str] = mapped_column(String(20), default="public", nullable=False)
+    show_online_status: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
+    deleted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    updated_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
     user = relationship("User", back_populates="preferences")
 
-
-class UserDevice(Base):
-    __tablename__ = "user_devices"
-
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    __table_args__ = (
+        CheckConstraint("items_per_page >= 5 AND items_per_page <= 100", name="ck_pref_items_per_page"),
     )
-    device_id: Mapped[str] = mapped_column(String(255), nullable=False)
-    device_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    device_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    os: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    browser: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
-    location: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    is_trusted: Mapped[bool] = mapped_column(Boolean, default=False)
-    is_current: Mapped[bool] = mapped_column(Boolean, default=False)
-    last_used_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
-    push_token: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
-    )
-    deleted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
-
-    user = relationship("User", back_populates="devices")
-
-
-class UserStat(Base):
-    __tablename__ = "user_stats"
-
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False
-    )
-    total_orders: Mapped[int] = mapped_column(Integer, default=0)
-    total_spent: Mapped[Decimal] = mapped_column(Numeric(18, 2), default=0)
-    total_purchases: Mapped[int] = mapped_column(Integer, default=0)
-    total_reviews: Mapped[int] = mapped_column(Integer, default=0)
-    total_wishlist_items: Mapped[int] = mapped_column(Integer, default=0)
-    total_favorite_sellers: Mapped[int] = mapped_column(Integer, default=0)
-    last_purchase_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
-    member_days: Mapped[int] = mapped_column(Integer, default=0)
-    account_tenure: Mapped[str] = mapped_column(String(20), default="new")
-    metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
-    )
-
-    user = relationship("User", back_populates="stats")
-
-
-class WishlistItem(Base):
-    __tablename__ = "wishlist_items"
-
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
-    )
-    product_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"), nullable=False
-    )
-    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
-    )
-
-    user = relationship("User")
-    product = relationship("Product")
-
-
-class FavoriteSeller(Base):
-    __tablename__ = "favorite_sellers"
-
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
-    )
-    seller_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
-    )
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
-    )
-
-    user = relationship("User", foreign_keys=[user_id])
-    seller = relationship("User", foreign_keys=[seller_id])

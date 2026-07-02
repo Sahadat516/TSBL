@@ -46,13 +46,10 @@ class User(Base):
     role_assignments = relationship("UserRole", back_populates="user", cascade="all, delete-orphan")
     direct_permissions = relationship("UserPermission", back_populates="user", cascade="all, delete-orphan")
     profile = relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    buyer_profile = relationship("BuyerProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
     seller_profile = relationship("SellerProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    settings = relationship("UserSettings", back_populates="user", uselist=False, cascade="all, delete-orphan")
     preferences = relationship("UserPreference", back_populates="user", uselist=False, cascade="all, delete-orphan")
-    devices = relationship("UserDevice", back_populates="user", cascade="all, delete-orphan")
-    stats = relationship("UserStat", back_populates="user", uselist=False, cascade="all, delete-orphan")
-    addresses = relationship("Address", back_populates="user", cascade="all, delete-orphan")
-    wishlist_items = relationship("WishlistItem", back_populates="user", cascade="all, delete-orphan")
-    favorite_sellers = relationship("FavoriteSeller", back_populates="user", foreign_keys="[FavoriteSeller.user_id]", cascade="all, delete-orphan")
 
 
 class Authentication(Base):
