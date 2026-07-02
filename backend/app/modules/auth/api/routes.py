@@ -1,9 +1,11 @@
+import hashlib
+
 from fastapi import APIRouter, Depends, Request
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_user, security_scheme
 from app.modules.auth.application.auth_service import AuthService
 from app.modules.auth.domain.entities import User
 from app.modules.auth.schemas.auth_schema import (
@@ -17,8 +19,6 @@ from app.modules.auth.schemas.auth_schema import (
     TokenResponse,
     UserResponse,
 )
-
-security_scheme = HTTPBearer()
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
@@ -56,8 +56,8 @@ async def logout(
     current_user: User = Depends(get_current_user),
     auth_service: AuthService = Depends(get_auth_service),
 ):
-    token_hash = credentials.credentials[-50:]
-    await auth_service.logout(str(current_user.id), token_hash)
+    token_hash = hashlib.sha256(credentials.credentials.encode()).hexdigest()
+    await auth_service.logout(current_user.id, token_hash)
     return None
 
 

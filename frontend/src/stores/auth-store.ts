@@ -22,6 +22,7 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         sessionStorage.removeItem("access_token")
         sessionStorage.removeItem("refresh_token")
+        document.cookie = "access_token=; path=/; max-age=0"
         set({ user: null, isAuthenticated: false, isLoading: false })
       },
     }),

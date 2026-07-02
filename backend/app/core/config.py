@@ -47,5 +47,13 @@ class Settings(BaseSettings):
     max_login_attempts: int = 5
     login_lockout_minutes: int = 30
 
+    def check_production_defaults(self):
+        import warnings
+        if self.jwt_secret_key == "change-this-in-production":
+            warnings.warn("jwt_secret_key is still set to default value", RuntimeWarning)
+        if self.encryption_key == "change-this-in-production":
+            warnings.warn("encryption_key is still set to default value", RuntimeWarning)
+
 
 settings = Settings()
+settings.check_production_defaults()

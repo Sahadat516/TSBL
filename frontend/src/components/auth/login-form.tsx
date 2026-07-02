@@ -43,6 +43,7 @@ export function LoginForm({ className }: LoginFormProps) {
       const response = await authService.login(data)
       sessionStorage.setItem("access_token", response.tokens.access_token)
       sessionStorage.setItem("refresh_token", response.tokens.refresh_token)
+      document.cookie = `access_token=${response.tokens.access_token}; path=/; max-age=1800; SameSite=Lax`
       setUser(response.user)
       router.push("/")
     } catch (err: unknown) {

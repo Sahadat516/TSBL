@@ -1,3 +1,4 @@
+import hashlib
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -111,16 +112,21 @@ class AuthService:
         if not payload or payload.get("type") != "refresh":
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
 
-        user_id = uuid.UUID(payload.get("sub"))
+        sub = payload.get("sub")
+        if not sub:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
+        user_id = uuid.UUID(sub)
         user = await self.user_repo.get(user_id)
         if not user:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
         return await self._create_tokens(user)
 
-    async def logout(self, user_id: str, token_hash: str):
+    async def logout(self, user_id: uuid.UUID, token_hash: str):
         session = await self.session_repo.find_by_token_hash(token_hash)
         if session:
+            if session.user_id != user_id:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Session does not belong to user")
             await self.session_repo.soft_delete(session.id)
 
     async def change_password(self, user_id: str, current_password: str, new_password: str):
@@ -157,7 +163,10 @@ class AuthService:
         if not payload or payload.get("purpose") != "password_reset":
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid reset token")
 
-        user_id = uuid.UUID(payload.get("sub"))
+        sub = payload.get("sub")
+        if not sub:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid reset token")
+        user_id = uuid.UUID(sub)
         user = await self.user_repo.get(user_id)
         if not user:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -176,8 +185,8 @@ class AuthService:
         session = Session(
             id=uuid.uuid4(),
             user_id=user.id,
-            token_hash=access_token[-50:],
-            refresh_token_hash=refresh_token[-50:],
+            token_hash=hashlib.sha256(access_token.encode()).hexdigest(),
+            refresh_token_hash=hashlib.sha256(refresh_token.encode()).hexdigest(),
             ip_address=ip_address,
             expires_at=datetime.now(timezone.utc) + timedelta(days=settings.jwt_refresh_token_expire_days),
         )

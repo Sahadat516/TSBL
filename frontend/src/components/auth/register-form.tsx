@@ -59,6 +59,7 @@ export function RegisterForm({ className }: RegisterFormProps) {
       const response = await authService.register(data)
       sessionStorage.setItem("access_token", response.tokens.access_token)
       sessionStorage.setItem("refresh_token", response.tokens.refresh_token)
+      document.cookie = `access_token=${response.tokens.access_token}; path=/; max-age=1800; SameSite=Lax`
       setUser(response.user)
       router.push("/")
     } catch (err: unknown) {

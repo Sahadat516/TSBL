@@ -3,7 +3,7 @@ export interface User {
   email: string
   username: string
   role: "guest" | "buyer" | "seller" | "moderator" | "admin" | "super_admin"
-  status: "pending" | "active" | "suspended" | "banned"
+  status: "pending" | "active" | "suspended" | "banned" | "deleted"
   is_verified: boolean
   profile_photo_url: string | null
   created_at: string

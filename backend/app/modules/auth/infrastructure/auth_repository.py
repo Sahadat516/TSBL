@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -60,8 +60,6 @@ class SessionRepository(BaseRepository[Session]):
         return result.scalar_one_or_none()
 
     async def revoke_user_sessions(self, user_id):
-        from sqlalchemy import update as sa_update
-
         stmt = (
             sa_update(Session)
             .where(Session.user_id == user_id, Session.is_revoked.is_(False))
