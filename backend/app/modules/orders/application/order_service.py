@@ -93,11 +93,10 @@ class OrderService:
             )
             self.db.add(order_item)
 
-        from_status = OrderStatus.PENDING.value if hasattr(OrderStatus.PENDING, "value") else str(OrderStatus.PENDING)
         await self.order_repo.add_status_history(
             order_id=order.id,
             from_status=None,
-            to_status=from_status,
+            to_status=OrderStatus.PENDING.value,
             changed_by=buyer_id,
             is_automated=True,
         )
@@ -168,7 +167,7 @@ class OrderService:
                 detail="Order cannot be cancelled in its current status",
             )
 
-        old_status = order.status.value if hasattr(order.status, "value") else str(order.status)
+        old_status = order.status.value
         order.status = OrderStatus.CANCELLED
         order.cancelled_at = datetime.now(timezone.utc)
         order.cancelled_by = user_id
@@ -176,7 +175,7 @@ class OrderService:
 
         await self.order_repo.add_status_history(
             order_id=order.id, from_status=old_status,
-            to_status=str(OrderStatus.CANCELLED.value) if hasattr(OrderStatus.CANCELLED, "value") else str(OrderStatus.CANCELLED),
+            to_status=OrderStatus.CANCELLED.value,
             changed_by=user_id, reason=request.reason,
         )
         await self.db.flush()
@@ -197,13 +196,13 @@ class OrderService:
         if order.status != OrderStatus.DELIVERED:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Order is not in delivered status")
 
-        old_status = order.status.value if hasattr(order.status, "value") else str(order.status)
+        old_status = order.status.value
         order.status = OrderStatus.COMPLETED
         order.completed_at = datetime.now(timezone.utc)
 
         await self.order_repo.add_status_history(
             order_id=order.id, from_status=old_status,
-            to_status=str(OrderStatus.COMPLETED.value) if hasattr(OrderStatus.COMPLETED, "value") else str(OrderStatus.COMPLETED),
+            to_status=OrderStatus.COMPLETED.value,
             changed_by=user_id, reason="Buyer confirmed delivery",
         )
         await self.db.flush()

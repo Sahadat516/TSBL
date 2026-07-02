@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import selectinload
 
 from app.common.base_repository import BaseRepository
 from app.common.enums import OrderStatus
-from app.modules.orders.domain.entities import Order, OrderItem, OrderStatusHistory
+from app.modules.orders.domain.entities import Order, OrderStatusHistory
 
 
 class OrderRepository(BaseRepository[Order]):
@@ -134,7 +133,7 @@ class OrderRepository(BaseRepository[Order]):
 
     async def get_next_order_number(self) -> str:
         result = await self.db.execute(
-            select(func.count(Order.id))
+            select(func.count(Order.id)).where(Order.deleted_at.is_(None))
         )
         count = result.scalar() or 0
         return f"TSBL-{count + 1:06d}"

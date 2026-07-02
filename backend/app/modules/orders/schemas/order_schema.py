@@ -25,10 +25,6 @@ class CancelOrderRequest(BaseModel):
     reason: str = Field(min_length=1, max_length=500)
 
 
-class ConfirmDeliveryRequest(BaseModel):
-    pass
-
-
 class OrderItemResponse(BaseModel):
     id: UUID
     product_id: UUID
