@@ -20,7 +20,7 @@ from app.modules.auth.schemas.auth_schema import (
     UserResponse,
 )
 
-router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
+router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 def get_auth_service(db: AsyncSession = Depends(get_db)) -> AuthService:

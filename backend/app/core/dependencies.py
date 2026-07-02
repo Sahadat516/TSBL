@@ -1,21 +1,29 @@
+from __future__ import annotations
+
 import uuid
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from redis.asyncio import Redis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
+from app.core.database import get_db, get_redis
 from app.core.security import decode_token, is_token_expired
 from app.modules.auth.domain.entities import User
 
-security_scheme = HTTPBearer()
+security_scheme = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security_scheme),
     db: AsyncSession = Depends(get_db),
 ) -> User:
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+        )
     payload = decode_token(credentials.credentials)
     if not payload or is_token_expired(payload):
         raise HTTPException(
@@ -28,8 +36,14 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token payload",
         )
-    user_id = uuid.UUID(sub)
-    result = await db.execute(select(User).where(User.id == user_id))
+    try:
+        user_id = uuid.UUID(sub)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload",
+        )
+    result = await db.execute(select(User).where(User.id == user_id, User.deleted_at.is_(None)))
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(
@@ -37,6 +51,26 @@ async def get_current_user(
             detail="User not found",
         )
     return user
+
+
+async def get_optional_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(security_scheme),
+    db: AsyncSession = Depends(get_db),
+) -> User | None:
+    if not credentials:
+        return None
+    payload = decode_token(credentials.credentials)
+    if not payload or is_token_expired(payload):
+        return None
+    sub = payload.get("sub")
+    if not sub:
+        return None
+    try:
+        user_id = uuid.UUID(sub)
+    except ValueError:
+        return None
+    result = await db.execute(select(User).where(User.id == user_id, User.deleted_at.is_(None)))
+    return result.scalar_one_or_none()
 
 
 async def get_current_admin(current_user: User = Depends(get_current_user)) -> User:
