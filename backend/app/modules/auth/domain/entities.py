@@ -43,6 +43,8 @@ class User(Base):
 
     authentication = relationship("Authentication", back_populates="user", uselist=False)
     sessions = relationship("Session", back_populates="user")
+    role_assignments = relationship("UserRole", back_populates="user", cascade="all, delete-orphan")
+    direct_permissions = relationship("UserPermission", back_populates="user", cascade="all, delete-orphan")
 
 
 class Authentication(Base):
