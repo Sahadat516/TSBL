@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, Field
@@ -30,7 +31,7 @@ class RefreshTokenRequest(BaseModel):
 
 
 class UserResponse(BaseModel):
-    id: str
+    id: uuid.UUID
     email: str
     username: str
     role: str

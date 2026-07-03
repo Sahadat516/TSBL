@@ -89,13 +89,13 @@ class Product(Base):
     description: Mapped[str] = mapped_column(Text, nullable=False)
     short_description: Mapped[str | None] = mapped_column(String(500), nullable=True)
     product_type: Mapped[ProductType] = mapped_column(
-        Enum(ProductType), default=ProductType.DIGITAL, nullable=False
+        Enum(ProductType, native_enum=False, create_constraint=True), default=ProductType.DIGITAL, nullable=False
     )
     listing_type: Mapped[ListingType] = mapped_column(
-        Enum(ListingType), default=ListingType.FIXED, nullable=False
+        Enum(ListingType, native_enum=False, create_constraint=True), default=ListingType.FIXED, nullable=False
     )
     status: Mapped[ProductStatus] = mapped_column(
-        Enum(ProductStatus), default=ProductStatus.DRAFT, nullable=False, index=True
+        Enum(ProductStatus, native_enum=False, create_constraint=True), default=ProductStatus.DRAFT, nullable=False, index=True
     )
     base_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=0)
     compare_at_price: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)

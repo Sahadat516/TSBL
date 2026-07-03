@@ -19,8 +19,8 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
     phone: Mapped[str] = mapped_column(String(20), nullable=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-    role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.BUYER, nullable=False)
-    status: Mapped[UserStatus] = mapped_column(Enum(UserStatus), default=UserStatus.PENDING, nullable=False)
+    role: Mapped[UserRole] = mapped_column(Enum(UserRole, native_enum=False, create_constraint=True), default=UserRole.BUYER, nullable=False)
+    status: Mapped[UserStatus] = mapped_column(Enum(UserStatus, native_enum=False, create_constraint=True), default=UserStatus.PENDING, nullable=False)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     email_verified_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     profile_photo_url: Mapped[str] = mapped_column(String(500), nullable=True)
@@ -60,11 +60,11 @@ class Authentication(Base):
         UUID(as_uuid=True), ForeignKey("users.id"), unique=True, nullable=False
     )
     auth_method: Mapped[AuthMethod] = mapped_column(
-        Enum(AuthMethod), default=AuthMethod.EMAIL, nullable=False
+        Enum(AuthMethod, native_enum=False, create_constraint=True), default=AuthMethod.EMAIL, nullable=False
     )
     mfa_secret: Mapped[str] = mapped_column(String(255), nullable=True)
     mfa_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
-    mfa_type: Mapped[MFAType] = mapped_column(Enum(MFAType), nullable=True)
+    mfa_type: Mapped[MFAType] = mapped_column(Enum(MFAType, native_enum=False, create_constraint=True), nullable=True)
     mfa_backup_codes: Mapped[dict] = mapped_column(JSONB, nullable=True)
     password_changed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=True
