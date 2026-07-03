@@ -28,7 +28,7 @@ class Wallet(Base):
     total_deposited: Mapped[Decimal] = mapped_column(Numeric(18, 2), default=Decimal("0.00"))
     total_withdrawn: Mapped[Decimal] = mapped_column(Numeric(18, 2), default=Decimal("0.00"))
     last_transaction_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    extra_metadata: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
@@ -74,7 +74,7 @@ class Transaction(Base):
     description: Mapped[str | None] = mapped_column(String(500), nullable=True)
     gateway: Mapped[str | None] = mapped_column(String(50), nullable=True)
     gateway_transaction_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    extra_metadata: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)

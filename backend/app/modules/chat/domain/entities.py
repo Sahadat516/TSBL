@@ -35,7 +35,7 @@ class Conversation(Base):
     last_message_preview: Mapped[str | None] = mapped_column(String(200), nullable=True)
     unread_count_buyer: Mapped[int] = mapped_column(Integer, default=0)
     unread_count_seller: Mapped[int] = mapped_column(Integer, default=0)
-    metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    extra_metadata: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
@@ -79,7 +79,7 @@ class Message(Base):
     reply_to_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("messages.id"), nullable=True
     )
-    metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    extra_metadata: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)

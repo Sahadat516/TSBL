@@ -41,7 +41,7 @@ class JSONFormatter(logging.Formatter):
 def _create_file_handler(filename: str, level: int) -> RotatingFileHandler:
     handler = RotatingFileHandler(
         LOG_DIR / filename,
-        max_bytes=10485760,
+        maxBytes=10485760,
         backupCount=10,
         encoding="utf-8",
     )

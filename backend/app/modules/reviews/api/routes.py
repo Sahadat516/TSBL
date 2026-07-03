@@ -81,10 +81,11 @@ async def moderate_review(
     return await service.moderate_review(uuid.UUID(review_id), request, admin.id)
 
 
-@router.delete("/sellers/{review_id}", status_code=204)
+@router.delete("/sellers/{review_id}", status_code=200)
 async def delete_review(
     review_id: str,
     current_user: User = Depends(get_current_user),
     service: ReviewService = Depends(get_review_service),
-) -> None:
+) -> dict:
     await service.delete_review(uuid.UUID(review_id), current_user.id)
+    return {"ok": True}

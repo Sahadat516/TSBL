@@ -110,7 +110,7 @@ class Product(Base):
     sku: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
     tags: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     attributes: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
-    metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    extra_metadata: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
     total_views: Mapped[int] = mapped_column(Integer, default=0)
     total_sales: Mapped[int] = mapped_column(Integer, default=0)
     average_rating: Mapped[float] = mapped_column(Float, default=0.0)

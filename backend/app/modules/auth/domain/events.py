@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 
-@dataclass
+@dataclass(kw_only=True)
 class DomainEvent:
     event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     occurred_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())

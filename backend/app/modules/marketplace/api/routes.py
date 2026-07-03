@@ -156,10 +156,11 @@ async def publish_product(
     return await service.publish_product(uuid.UUID(product_id), current_user.id)
 
 
-@router.post("/products/{product_id}/archive", status_code=204)
+@router.post("/products/{product_id}/archive", status_code=200)
 async def archive_product(
     product_id: str,
     current_user: User = Depends(get_current_user),
     service: MarketplaceService = Depends(get_marketplace_service),
-) -> None:
+) -> dict:
     await service.archive_product(uuid.UUID(product_id), current_user.id)
+    return {"ok": True}

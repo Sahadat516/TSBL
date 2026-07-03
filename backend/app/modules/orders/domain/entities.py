@@ -41,7 +41,7 @@ class Order(Base):
     cancelled_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=True)
     cancellation_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
-    metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    extra_metadata: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
@@ -89,7 +89,7 @@ class OrderItem(Base):
         Enum(DeliveryStatus), default=DeliveryStatus.PENDING, nullable=False
     )
     is_digital: Mapped[bool] = mapped_column(Boolean, default=True)
-    metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    extra_metadata: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
@@ -118,7 +118,7 @@ class OrderStatusHistory(Base):
     changed_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=True)
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_automated: Mapped[bool] = mapped_column(Boolean, default=False)
-    metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    extra_metadata: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)

@@ -80,17 +80,18 @@ async def refresh_token(
     return await auth_service.refresh_token(request.refresh_token)
 
 
-@router.post("/logout", status_code=204)
+@router.post("/logout", status_code=200, response_model=None)
 async def logout(
     credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
     current_user: User = Depends(get_current_user),
     auth_service: AuthService = Depends(get_auth_service),
-) -> None:
+) -> dict:
     token_hash = hashlib.sha256(credentials.credentials.encode()).hexdigest()
     await auth_service.logout(
         user_id=current_user.id,
         token_hash=token_hash,
     )
+    return {"ok": True}
 
 
 @router.get("/me", response_model=UserResponse)
@@ -109,33 +110,36 @@ async def update_profile(
     return await auth_service.update_profile(current_user.id, request)
 
 
-@router.post("/change-password", status_code=204)
+@router.post("/change-password", status_code=200)
 async def change_password(
     request: ChangePasswordRequest,
     current_user: User = Depends(get_current_user),
     auth_service: AuthService = Depends(get_auth_service),
-) -> None:
+) -> dict:
     await auth_service.change_password(
         str(current_user.id), request.current_password, request.new_password
     )
+    return {"ok": True}
 
 
-@router.post("/forgot-password", status_code=204)
+@router.post("/forgot-password", status_code=200)
 async def forgot_password(
     request: ForgotPasswordRequest,
     auth_service: AuthService = Depends(get_auth_service),
-) -> None:
+) -> dict:
     await auth_service.forgot_password(request.email)
+    return {"ok": True}
 
 
-@router.post("/reset-password", status_code=204)
+@router.post("/reset-password", status_code=200)
 async def reset_password(
     request: ResetPasswordRequest,
     auth_service: AuthService = Depends(get_auth_service),
-) -> None:
+) -> dict:
     await auth_service.reset_password(
         request.token, request.password, request.confirm_password
     )
+    return {"ok": True}
 
 
 @router.get("/sessions", response_model=SessionListResponse)
@@ -148,23 +152,25 @@ async def list_sessions(
     return await auth_service.get_sessions(current_user.id, current_token_hash)
 
 
-@router.delete("/sessions/{session_id}", status_code=204)
+@router.delete("/sessions/{session_id}", status_code=200)
 async def revoke_session(
     session_id: str,
     current_user: User = Depends(get_current_user),
     auth_service: AuthService = Depends(get_auth_service),
-) -> None:
+) -> dict:
     await auth_service.revoke_session(current_user.id, uuid.UUID(session_id))
+    return {"ok": True}
 
 
-@router.delete("/sessions", status_code=204)
+@router.delete("/sessions", status_code=200)
 async def revoke_all_sessions(
     credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
     current_user: User = Depends(get_current_user),
     auth_service: AuthService = Depends(get_auth_service),
-) -> None:
+) -> dict:
     token_hash = hashlib.sha256(credentials.credentials.encode()).hexdigest()
     await auth_service.revoke_all_sessions_except(current_user.id, current_token_hash=token_hash)
+    return {"ok": True}
 
 
 @router.post("/mfa/enable", response_model=MFAEnableResponse)
@@ -175,22 +181,24 @@ async def enable_mfa(
     return await auth_service.enable_mfa(current_user.id)
 
 
-@router.post("/mfa/verify", status_code=204)
+@router.post("/mfa/verify", status_code=200)
 async def verify_mfa(
     request: MFAVerifyRequest,
     current_user: User = Depends(get_current_user),
     auth_service: AuthService = Depends(get_auth_service),
-) -> None:
+) -> dict:
     await auth_service.verify_mfa(current_user.id, request.code)
+    return {"ok": True}
 
 
-@router.post("/mfa/disable", status_code=204)
+@router.post("/mfa/disable", status_code=200)
 async def disable_mfa(
     request: MFAVerifyRequest,
     current_user: User = Depends(get_current_user),
     auth_service: AuthService = Depends(get_auth_service),
-) -> None:
+) -> dict:
     await auth_service.disable_mfa(current_user.id, request.code)
+    return {"ok": True}
 
 
 @router.get("/mfa/status", response_model=MFAStatusResponse)

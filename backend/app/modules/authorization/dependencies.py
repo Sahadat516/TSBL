@@ -17,7 +17,7 @@ async def get_authz_service(
     return AuthorizationService(db=db, redis=redis)
 
 
-async def require_permission(permission: str):
+def require_permission(permission: str):
     async def _require_permission(
         current_user: User = Depends(get_current_user),
         authz: AuthorizationService = Depends(get_authz_service),
@@ -32,7 +32,7 @@ async def require_permission(permission: str):
     return _require_permission
 
 
-async def require_any_permission(permissions: list[str]):
+def require_any_permission(permissions: list[str]):
     async def _require_any_permission(
         current_user: User = Depends(get_current_user),
         authz: AuthorizationService = Depends(get_authz_service),
@@ -47,7 +47,7 @@ async def require_any_permission(permissions: list[str]):
     return _require_any_permission
 
 
-async def require_all_permissions(permissions: list[str]):
+def require_all_permissions(permissions: list[str]):
     async def _require_all_permissions(
         current_user: User = Depends(get_current_user),
         authz: AuthorizationService = Depends(get_authz_service),

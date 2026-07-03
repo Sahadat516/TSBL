@@ -96,13 +96,14 @@ async def save_payment_method(
     return await service.save_payment_method(request, current_user.id)
 
 
-@router.delete("/methods/{method_id}", status_code=204)
+@router.delete("/methods/{method_id}", status_code=200)
 async def delete_payment_method(
     method_id: str,
     current_user: User = Depends(get_current_user),
     service: PaymentService = Depends(get_payment_service),
-) -> None:
+) -> dict:
     await service.delete_payment_method(uuid.UUID(method_id), current_user.id)
+    return {"ok": True}
 
 
 @router.post("/payouts", response_model=PayoutResponse, status_code=201)

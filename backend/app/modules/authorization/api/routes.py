@@ -91,23 +91,25 @@ async def update_role(
     return await service.update_role(uuid.UUID(role_id), request, current_user.id)
 
 
-@router.delete("/roles/{role_id}", status_code=204)
+@router.delete("/roles/{role_id}", status_code=200)
 async def delete_role(
     role_id: str,
     current_user: User = Depends(require_permission("roles:delete")),
     service: AuthorizationService = Depends(get_authz_service),
-) -> None:
+) -> dict:
     await service.delete_role(uuid.UUID(role_id), current_user.id)
+    return {"ok": True}
 
 
-@router.post("/roles/{role_id}/sync-permissions", status_code=204)
+@router.post("/roles/{role_id}/sync-permissions", status_code=200)
 async def sync_role_permissions(
     role_id: str,
     request: SyncRolePermissionsRequest,
     current_user: User = Depends(require_permission("roles:manage_permissions")),
     service: AuthorizationService = Depends(get_authz_service),
-) -> None:
+) -> dict:
     await service.sync_role_permissions(uuid.UUID(role_id), request.permission_ids, current_user.id)
+    return {"ok": True}
 
 
 @router.get("/roles/{role_id}/permissions", response_model=list[str])
@@ -156,13 +158,14 @@ async def update_permission(
     return await service.update_permission(uuid.UUID(perm_id), request, current_user.id)
 
 
-@router.delete("/permissions/{perm_id}", status_code=204)
+@router.delete("/permissions/{perm_id}", status_code=200)
 async def delete_permission(
     perm_id: str,
     current_user: User = Depends(require_permission("permissions:delete")),
     service: AuthorizationService = Depends(get_authz_service),
-) -> None:
+) -> dict:
     await service.delete_permission(uuid.UUID(perm_id), current_user.id)
+    return {"ok": True}
 
 
 # --- Permission Groups ---
@@ -195,13 +198,14 @@ async def assign_role(
     return await service.assign_role(request, current_user.id)
 
 
-@router.post("/remove-role", status_code=204)
+@router.post("/remove-role", status_code=200)
 async def remove_role(
     request: RemoveRoleRequest,
     current_user: User = Depends(require_permission("roles:assign")),
     service: AuthorizationService = Depends(get_authz_service),
-) -> None:
+) -> dict:
     await service.remove_role(request, current_user.id)
+    return {"ok": True}
 
 
 @router.post("/bulk-assign-role", status_code=200)
@@ -226,22 +230,24 @@ async def bulk_remove_role(
 
 # --- Direct User Permissions ---
 
-@router.post("/assign-permission", status_code=204)
+@router.post("/assign-permission", status_code=200)
 async def assign_permission(
     request: AssignPermissionRequest,
     current_user: User = Depends(require_permission("permissions:direct_assign")),
     service: AuthorizationService = Depends(get_authz_service),
-) -> None:
+) -> dict:
     await service.assign_permission(request, current_user.id)
+    return {"ok": True}
 
 
-@router.post("/remove-permission", status_code=204)
+@router.post("/remove-permission", status_code=200)
 async def remove_permission(
     request: RemovePermissionRequest,
     current_user: User = Depends(require_permission("permissions:direct_assign")),
     service: AuthorizationService = Depends(get_authz_service),
-) -> None:
+) -> dict:
     await service.remove_permission(request, current_user.id)
+    return {"ok": True}
 
 
 # --- User Permission Lookup ---
@@ -335,13 +341,14 @@ async def update_feature_flag(
     return await service.update_feature_flag(uuid.UUID(flag_id), request)
 
 
-@router.delete("/feature-flags/{flag_id}", status_code=204)
+@router.delete("/feature-flags/{flag_id}", status_code=200)
 async def delete_feature_flag(
     flag_id: str,
     current_user: User = Depends(require_permission("feature_flags:delete")),
     service: AuthorizationService = Depends(get_authz_service),
-) -> None:
+) -> dict:
     await service.delete_feature_flag(uuid.UUID(flag_id))
+    return {"ok": True}
 
 
 # --- Authorization Logs ---
